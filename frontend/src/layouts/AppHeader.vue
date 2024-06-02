@@ -45,16 +45,48 @@
       <a-modal v-model:visible="isSettingOpen" title="系统设置">
          <a-form  autocomplete="off">
             <a-form-item label="监听端口" name="port" :rules="[{ required: true, message: 'Please input your port!' }]">
-              <a-input v-model:value="username" />
+              <a-input v-model:value="port" style="width:20%"/>
+            </a-form-item>
+            <a-form-item label="心跳间隔" name="heartbeat" :rules="[{ required: true, message: 'Please input your minute!' }]">
+              <a-input v-model:value="hearbeat" style="width:20%;"/> /分钟(0为关闭)
             </a-form-item>
           </a-form>
       </a-modal>
 
       <!-- 服务生成弹窗 -->
       <a-modal v-model:visible="isServiceGenOpen" title="服务生成">
-        <p>Some contents...</p>
-        <p>Some contents...</p>
-        <p>Some contents...</p>
+        <a-form  autocomplete="off">
+            <a-form-item label="上线地址" name="Address" :rules="[{ required: true, message: 'Please input your adress!' }]">
+              <a-input v-model:value="port" style="width:50%"/>         
+              <a-button style="margin-left:10px;">测试</a-button>
+            </a-form-item>
+            <a-form-item label="服务名称" name="ServiceName" :rules="[{ required: true, message: 'Please input your service!' }]">
+              <a-input v-model:value="hearbeat" style="width:50%;"/>
+              <a-button style="margin-left:10px;">随机生成</a-button>
+            </a-form-item>         
+          </a-form>
+         <div>
+            <a-radio-group v-model:value="value">
+              <a-radio :value="1">默认启动</a-radio>
+              <a-radio :value="2">注册表启动</a-radio>
+              <a-radio :value="3">服务启动</a-radio>
+            </a-radio-group>
+          </div>
+          <div> 
+            服务版本
+            <a-tag color="processing">1.0</a-tag>
+            默认分组
+            <a-select
+              v-model:value="value"
+              label-in-value
+              style="width: 120px"
+              :options="options"
+              @change="handleChange"
+            ></a-select>
+          </div>
+      <!-- 签名文件 -->
+
+
       </a-modal>
 
       <!-- 实用工具弹窗 -->
@@ -87,6 +119,21 @@ export default {
     const isAboutOpen = ref(false);
     const currentDate = ref('');
     const currentTime = ref('');
+    const options = ref([
+      {
+        value: 'jack',
+        label: 'Jack (100)',
+      },
+    ]);
+    const handleChange = value => {
+      console.log(value); // { key: "lucy", label: "Lucy (101)" }
+    };
+    const value = ref({
+      value: 'lucy',
+      label: 'Lucy (101)',
+    });
+    let port;
+    let hearbeat;
     let intervalId;
 
     const getCurrentTime = () => {
@@ -161,12 +208,17 @@ export default {
       isAboutOpen,
       currentDate,
       currentTime,
+      port,
+      hearbeat,
+      options,
+      value,
       openSettingModal,
       openServiceGenModal,
       openToolsModal,
       openAboutModal,
       handleExit,
-      handleOk
+      handleOk,
+      handleChange
     };
   }
 };

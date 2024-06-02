@@ -6,7 +6,6 @@
 const constantRouterMap = [
   {
     path: '/',
-    component: () => import('@/layouts/AppHeader.vue'),
     redirect: '/dashboard'
   },
   {
