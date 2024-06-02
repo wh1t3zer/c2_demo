@@ -1,61 +1,93 @@
 <template>
   <a-layout id="app-layout-header">
-    <a-layout-header
-      theme="light"
-      class="layout-header"
-      height="64"
-      lineHeight="64"
-    >
-    <div class="menu_button">
-      <img class="pic-logo" src="@/assets/logo.png"/>
-    </div>
-      <a-button type="text" class="menu_button">
+    <a-layout-header theme="light" class="layout-header" height="64" lineHeight="64">
+      <div class="menu_button">
+        <img class="pic-logo" src="@/assets/logo.png"/>
+      </div>
+      <a-button @click="openSettingModal" type="text" class="menu_button">
         <div class="menu_button-content">
           <SettingTwoTone />
           <span class="menu_button-text">系统设置</span>
         </div>
       </a-button>
-      <a-button type="text" class="menu_button">
+      <a-button @click="openServiceGenModal" type="text" class="menu_button">
         <div class="menu_button-content">
           <FileAddTwoTone />         
-        <span class="menu_button-text">服务生成</span>
+          <span class="menu_button-text">服务生成</span>
         </div>
       </a-button>
-      <a-button type="text" class="menu_button">
+      <a-button @click="openToolsModal" type="text" class="menu_button">
         <div class="menu_button-content">
           <ToolTwoTone />
-        <span class="menu_button-text">实用工具</span>
+          <span class="menu_button-text">实用工具</span>
         </div>
       </a-button>
-      <a-button type="text" class="menu_button">
+      <a-button @click="openAboutModal" type="text" class="menu_button">
         <div class="menu_button-content">
           <QuestionCircleTwoTone />          
-        <span class="menu_button-text">关于程序</span>
+          <span class="menu_button-text">关于程序</span>
         </div>
       </a-button>
-      <a-button type="text" class="menu_button">
+      <a-button @click="handleExit" type="text" class="menu_button">
         <div class="menu_button-content">
           <CloseCircleTwoTone />          
-        <span class="menu_button-text">退出程序</span>
+          <span class="menu_button-text">退出程序</span>
         </div>
       </a-button>
+      
       <!-- 添加时钟和日期 -->
       <div class="clock">
         <span class="current-date">{{ currentDate }}</span>
         <span class="current-time">{{ currentTime }}</span>
       </div>
+
+      <!-- 系统设置弹窗 -->
+      <a-modal v-model:visible="isSettingOpen" title="系统设置">
+         <a-form  autocomplete="off">
+            <a-form-item label="监听端口" name="port" :rules="[{ required: true, message: 'Please input your port!' }]">
+              <a-input v-model:value="username" />
+            </a-form-item>
+          </a-form>
+      </a-modal>
+
+      <!-- 服务生成弹窗 -->
+      <a-modal v-model:visible="isServiceGenOpen" title="服务生成">
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+      </a-modal>
+
+      <!-- 实用工具弹窗 -->
+      <a-modal v-model:visible="isToolsOpen" title="实用工具">
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+      </a-modal>
+
+      <!-- 关于本程序弹窗 -->
+      <a-modal v-model:visible="isAboutOpen" title="关于本程序" @ok="handleOk" :cancel-button-props="{ disabled: true }" :footer="null">
+        <p>wh1t3zer开发</p>
+        <p>基于electron框架</p>
+        <p>杰克</p>
+      </a-modal>
     </a-layout-header>
   </a-layout>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { SettingTwoTone, FileAddTwoTone, ToolTwoTone, QuestionCircleTwoTone, CloseCircleTwoTone } from '@ant-design/icons-vue';
 
 export default {
   name: 'AppHeader',
   setup() {
+    const isSettingOpen = ref(false);
+    const isServiceGenOpen = ref(false);
+    const isToolsOpen = ref(false);
+    const isAboutOpen = ref(false);
     const currentDate = ref('');
     const currentTime = ref('');
+    let intervalId;
 
     const getCurrentTime = () => {
       const now = new Date();
@@ -76,16 +108,67 @@ export default {
     onMounted(() => {
       currentDate.value = getCurrentDate();
       currentTime.value = getCurrentTime();
-      setInterval(() => {
+      intervalId = setInterval(() => {
         currentTime.value = getCurrentTime();
       }, 1000);
     });
 
+    onBeforeUnmount(() => {
+      clearInterval(intervalId);
+    });
+
+    const openSettingModal = () => {
+      isSettingOpen.value = true;
+      isServiceGenOpen.value = false;
+      isToolsOpen.value = false;
+      isAboutOpen.value = false;
+    };
+
+    const openServiceGenModal = () => {
+      isSettingOpen.value = false;
+      isServiceGenOpen.value = true;
+      isToolsOpen.value = false;
+      isAboutOpen.value = false;
+    };
+
+    const openToolsModal = () => {
+      isSettingOpen.value = false;
+      isServiceGenOpen.value = false;
+      isToolsOpen.value = true;
+      isAboutOpen.value = false;
+    };
+
+    const openAboutModal = () => {
+      isSettingOpen.value = false;
+      isServiceGenOpen.value = false;
+      isToolsOpen.value = false;
+      isAboutOpen.value = true;
+    };
+
+    const handleExit = () => {
+      console.log("exit");
+    };
+
+    const handleOk = e => {
+      console.log(e);
+      isAboutOpen.value = false;
+    };
+
     return {
+      isSettingOpen,
+      isServiceGenOpen,
+      isToolsOpen,
+      isAboutOpen,
       currentDate,
       currentTime,
+      openSettingModal,
+      openServiceGenModal,
+      openToolsModal,
+      openAboutModal,
+      handleExit,
+      handleOk
     };
-  },
+  }
 };
 </script>
 

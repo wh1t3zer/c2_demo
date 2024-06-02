@@ -1,20 +1,19 @@
 <template>
   <a-layout id="app-layout-footer">
     <a-layout-footer class="app-layout-footer">
-      <!-- <a-table 
-        :dataSource="dataSource" 
-        :columns="columns"
-        :scroll="{ y: 380 }"
-        :pagination="false"
-        class="app-layout-content-left"
-      /> -->
       <div class="app-layout-content-left">
-      <ul>
-          <li v-for="(log, index) in logs" :key="index">{{ log }}</li>
-        </ul>
+      <a-descriptions layout="vertical">
+        <a-descriptions-item label="操作日志" >
+    </a-descriptions-item>
+      </a-descriptions>
       </div>
       <a-layout-content class="app-layout-content-right">此处待开发</a-layout-content>
+       <div>
+      server listen on :
+      <a-tag color="success">3456</a-tag>
+      </div>
     </a-layout-footer>
+   
   </a-layout>
 </template>
 
@@ -23,7 +22,7 @@ export default {
   name: 'AppFooter',
   setup() {
     return {
-      logs: ["哈哈哈"], // 用于存储日志记录
+      logs: ["2024xxx 创建文件"], // 用于存储日志记录
       dataSource: [
       {
         key: '1',
@@ -64,7 +63,6 @@ export default {
     background-color: #fff;
     height: 100%;
     display: flex;
-    align-items: center; /* 垂直居中对齐 */
   }
   .app-layout-content-left {
     width: 70%;

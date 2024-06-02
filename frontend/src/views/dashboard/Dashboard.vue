@@ -6,6 +6,7 @@
     :scroll="{ y: 380 }"
     :pagination="false"
    />
+
    <AppFooter />
 </template>
 <script>
