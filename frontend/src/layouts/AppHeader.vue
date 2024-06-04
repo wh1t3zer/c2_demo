@@ -28,7 +28,7 @@
           <span class="menu_button-text">关于程序</span>
         </div>
       </a-button>
-      <a-button @click="handleExit" type="text" class="menu_button">
+      <a-button @click="openExitModal" type="text" class="menu_button">
         <div class="menu_button-content">
           <CloseCircleTwoTone />          
           <span class="menu_button-text">退出程序</span>
@@ -102,6 +102,10 @@
         <p>基于electron框架</p>
         <p>杰克</p>
       </a-modal>
+
+      <a-modal v-model:visible="isExitOpen" title="退出程序" @ok="handleOk">
+        <p>确定要退出程序吗</p>
+      </a-modal>
     </a-layout-header>
   </a-layout>
 </template>
@@ -109,14 +113,20 @@
 <script>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { SettingTwoTone, FileAddTwoTone, ToolTwoTone, QuestionCircleTwoTone, CloseCircleTwoTone } from '@ant-design/icons-vue';
+import { ipcApiRoute } from '@/api/main';
+import { ipc } from '@/utils/ipcRenderer';
+import  axios  from 'axios';
 
 export default {
   name: 'AppHeader',
   setup() {
+    const serverUrl = ref('');
+    const port = ref('');
     const isSettingOpen = ref(false);
     const isServiceGenOpen = ref(false);
     const isToolsOpen = ref(false);
     const isAboutOpen = ref(false);
+    const isExitOpen = ref(false);
     const currentDate = ref('');
     const currentTime = ref('');
     const options = ref([
@@ -132,7 +142,6 @@ export default {
       value: 'lucy',
       label: 'Lucy (101)',
     });
-    let port;
     let hearbeat;
     let intervalId;
 
@@ -169,6 +178,8 @@ export default {
       isServiceGenOpen.value = false;
       isToolsOpen.value = false;
       isAboutOpen.value = false;
+      isExitOpen.value = false;
+      initData()
     };
 
     const openServiceGenModal = () => {
@@ -176,6 +187,7 @@ export default {
       isServiceGenOpen.value = true;
       isToolsOpen.value = false;
       isAboutOpen.value = false;
+      isExitOpen.value = false;
     };
 
     const openToolsModal = () => {
@@ -183,6 +195,7 @@ export default {
       isServiceGenOpen.value = false;
       isToolsOpen.value = true;
       isAboutOpen.value = false;
+      isExitOpen.value = false;
     };
 
     const openAboutModal = () => {
@@ -190,10 +203,15 @@ export default {
       isServiceGenOpen.value = false;
       isToolsOpen.value = false;
       isAboutOpen.value = true;
+      isExitOpen.value = false;
     };
 
-    const handleExit = () => {
-      console.log("exit");
+    const openExitModal = () => {
+      isSettingOpen.value = false;
+      isServiceGenOpen.value = false;
+      isToolsOpen.value = false;
+      isAboutOpen.value = false;
+      isExitOpen.value = true;
     };
 
     const handleOk = e => {
@@ -201,24 +219,47 @@ export default {
       isAboutOpen.value = false;
     };
 
+    const initData = () => {
+    ipc.invoke(ipcApiRoute.getCrossUrl, {name: 'goapp'}).then(url => {
+    serverUrl.value = url;
+    let reqApi = serverUrl.value + '/api/ping';
+    const cfg = {
+      method: 'get',
+      url: reqApi,
+      timeout: 1000,
+    };
+
+    axios(cfg).then(res => {
+      port.value = res.data.data.split(':')[1]
+    }).catch(err => {
+      console.error("Error:", err);
+    });
+  }).catch(err => {
+    console.error("Error getting server URL:", err);
+  });
+};
+
     return {
       isSettingOpen,
       isServiceGenOpen,
       isToolsOpen,
       isAboutOpen,
+      isExitOpen,
       currentDate,
       currentTime,
       port,
       hearbeat,
       options,
       value,
+      serverUrl,
       openSettingModal,
       openServiceGenModal,
       openToolsModal,
       openAboutModal,
-      handleExit,
+      openExitModal,
       handleOk,
-      handleChange
+      handleChange,
+      initData,
     };
   }
 };

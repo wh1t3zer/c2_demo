@@ -2,8 +2,11 @@
   <a-layout id="app-layout-footer">
     <a-layout-footer class="app-layout-footer">
       <div class="app-layout-content-left">
-      <a-descriptions layout="vertical">
-        <a-descriptions-item label="操作日志" >
+      <a-descriptions layout="horizontal">
+        <a-descriptions-item label="操作日志" style="width:90px;">
+        </a-descriptions-item>
+        <a-descriptions-item  v-for="(log,index) in logs" :key="index" style="display:flex;">
+          {{log}}
     </a-descriptions-item>
       </a-descriptions>
       </div>
@@ -22,7 +25,7 @@ export default {
   name: 'AppFooter',
   setup() {
     return {
-      logs: ["2024xxx 创建文件"], // 用于存储日志记录
+      logs: ["2024xxx 创建文件","2024xxx 创建文件","2024xxx 创建文件","2024xxx 创建文件"], // 用于存储日志记录
       dataSource: [
       {
         key: '1',
@@ -67,7 +70,7 @@ export default {
   .app-layout-content-left {
     width: 70%;
     height: 100%;
-    background-color: orange;
+    background-color: #fff;
     margin-right: 5px;
   }
   .app-layout-content-right {

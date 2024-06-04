@@ -14,4 +14,8 @@ func Api() {
 
 	// 使用 gin 注册路由
 	eRouter.GinRouter.GET("/api/info", api.Info)
+
+	eRouter.GinRouter.GET("/api/ping", api.Ping)
+	eRouter.GinRouter.GET("/api/restart", api.Restart)
+
 }
