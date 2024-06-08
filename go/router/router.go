@@ -16,6 +16,6 @@ func Api() {
 	eRouter.GinRouter.GET("/api/info", api.Info)
 
 	eRouter.GinRouter.GET("/api/ping", api.Ping)
-	eRouter.GinRouter.GET("/api/restart", api.Restart)
+	eRouter.GinRouter.GET("/api/restart", api.RestartHandle)
 
 }

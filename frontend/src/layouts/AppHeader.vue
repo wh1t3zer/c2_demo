@@ -42,12 +42,12 @@
       </div>
 
       <!-- 系统设置弹窗 -->
-      <a-modal v-model:visible="isSettingOpen" title="系统设置">
-         <a-form  autocomplete="off">
-            <a-form-item label="监听端口" name="port" :rules="[{ required: true, message: 'Please input your port!' }]">
+      <a-modal v-model:visible="isSettingOpen" title="系统设置" @ok="handleRestart">
+         <a-form  autocomplete="off" :rules="rules">
+            <a-form-item label="监听端口" name="port">
               <a-input v-model:value="port" style="width:20%"/>
             </a-form-item>
-            <a-form-item label="心跳间隔" name="heartbeat" :rules="[{ required: true, message: 'Please input your minute!' }]">
+            <a-form-item label="心跳间隔" name="heartbeat">
               <a-input v-model:value="hearbeat" style="width:20%;"/> /分钟(0为关闭)
             </a-form-item>
           </a-form>
@@ -85,8 +85,6 @@
             ></a-select>
           </div>
       <!-- 签名文件 -->
-
-
       </a-modal>
 
       <!-- 实用工具弹窗 -->
@@ -144,6 +142,7 @@ export default {
     });
     let hearbeat;
     let intervalId;
+    
 
     const getCurrentTime = () => {
       const now = new Date();
@@ -228,16 +227,37 @@ export default {
       url: reqApi,
       timeout: 1000,
     };
-
     axios(cfg).then(res => {
       port.value = res.data.data.split(':')[1]
+        }).catch(err => {
+          console.error("Error:", err);
+        });
+      }).catch(err => {
+        console.error("Error getting server URL:", err);
+      });
+    };
+
+    const handleRestart = e => {
+      console.log(e)
+        let reqApi = serverUrl.value + '/api/restart';
+        const cfg = {
+          method: 'get',
+          url: reqApi,
+          timeout: 1000,
+          params: {
+            port: port.value
+          }
+        };
+    axios(cfg).then(res => {
+      console.log(res.statusText)
+    if(res.statusText == "ok"){
+      isSettingOpen.value = false
+    }
     }).catch(err => {
       console.error("Error:", err);
     });
-  }).catch(err => {
-    console.error("Error getting server URL:", err);
-  });
 };
+
 
     return {
       isSettingOpen,
@@ -260,6 +280,7 @@ export default {
       handleOk,
       handleChange,
       initData,
+      handleRestart,
     };
   }
 };

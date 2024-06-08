@@ -1,26 +1,32 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/wallace5303/ee-go/ehelper"
 	"github.com/wallace5303/ee-go/elog"
 	"net"
 	"net/http"
-	"os/exec"
-	"runtime"
+	"os"
+	"os/signal"
 	"strconv"
-	"strings"
+	"syscall"
+	"time"
 )
 
 // ServerObj 表示服务器对象
 type ServerObj struct {
-	IP   string `json:"ip"`
-	Port int    `json:"port"`
+	IP       string       `json:"ip"`
+	Port     int          `json:"port"`
+	Listener net.Listener `json:"-"`
+	Server   *http.Server `json:"-"`
 }
 
 var (
-	address string
+	defaultPort = 3456
+	address     string
+	server      *ServerObj
 )
 
 // Ping 处理 ping 请求
@@ -32,99 +38,90 @@ func Ping(gc *gin.Context) {
 	return
 }
 
-// Start 启动服务器并返回监听端口的 JSON 对象
-func (s *ServerObj) Start() string {
+// Start 启动服务器
+func (s *ServerObj) Start() {
 	address = s.IP + ":" + strconv.Itoa(s.Port)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		return "监听失败"
+		elog.Logger.Info("监听失败: " + err.Error())
+		return
 	}
-	elog.Logger.Info("C&C server listen at : " + s.IP + ":" + strconv.Itoa(s.Port))
-	defer listener.Close()
+	s.Listener = listener
+	elog.Logger.Info("Server listen at : " + address)
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			fmt.Println("接受连接失败:", err)
-			continue
+	s.Server = &http.Server{}
+	go func() {
+		if err := s.Server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			elog.Logger.Fatalf("Server listen: %s\n", err)
 		}
-		defer conn.Close()
-	}
+	}()
 }
 
-func getServiceByPort(port int) (string, error) {
-	var cmdStr string
-	if runtime.GOOS == "windows" {
-		cmdStr = fmt.Sprintf("netstat -ano | findstr :%d", port)
-	} else {
-		cmdStr = fmt.Sprintf("\"lsof -i:%d\"", port)
-	}
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("cmd", "/C", cmdStr)
-		//getProcessByPid("")
-	} else {
-		cmd = exec.Command("sh", "-c", fmt.Sprintf("%s", cmdStr))
-	}
-	output, err := cmd.CombinedOutput()
-	fmt.Println("output ", string(output))
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-
-	lines := strings.Split(string(output), "\n")
-	if len(lines) == 0 {
-		return "", fmt.Errorf("no process found on port %d", port)
-	}
-
-	for _, line := range lines {
-		if strings.Contains(line, fmt.Sprintf(".%d", port)) {
-			fields := strings.Fields(line)
-			fmt.Println("field: ", fields)
-			if runtime.GOOS == "windows" {
-				return fields[len(fields)-1], nil
-			} else {
-				return fields[len(fields)-1], nil
-			}
+// Stop 停止服务器
+func (s *ServerObj) Stop() {
+	if s.Server != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.Server.Shutdown(ctx); err != nil {
+			elog.Logger.Fatalf("Server Shutdown: %s\n", err)
 		}
+		elog.Logger.Info("Server stopped at : " + s.IP + ":" + strconv.Itoa(s.Port))
 	}
-
-	return "", fmt.Errorf("no process found on port %d", port)
 }
 
-func getProcessByPid(pid string) {
-	var cmdStr string
-	if runtime.GOOS == "windows" {
-		cmdStr = fmt.Sprintf("tasklist | findstr %s", pid)
-	}
-	fmt.Println(cmdStr)
-	return
+// Restart 重启服务器
+func Restart(port int) error {
+	// 停止默认端口的服务器
+	defaultServer := &ServerObj{IP: "127.0.0.1", Port: defaultPort}
+	defaultServer.Stop()
+
+	// 启动指定端口的服务器
+	newServer := &ServerObj{IP: "127.0.0.1", Port: port}
+	newServer.Start()
+
+	// 更新全局 server 对象
+	server = newServer
+	return nil
 }
 
-func Restart(gc *gin.Context) {
-	var s *ServerObj
-	s = new(ServerObj)
-	port := gc.Query("port")
-	if port == "" {
-		s.Port = 3456
-	} else {
-		parsedPort, err := strconv.Atoi(port)
+// RestartHandle 处理重启请求
+func RestartHandle(gc *gin.Context) {
+	portStr := gc.Query("port")
+	port := defaultPort
+	var err error
+
+	if portStr != "" {
+		port, err = strconv.Atoi(portStr)
 		if err != nil {
-			// 如果转换失败，返回错误信息
 			gc.JSON(http.StatusBadRequest, gin.H{"error": "Invalid port"})
 			return
 		}
-		if parsedPort >= 1 && parsedPort <= 65535 {
-			s.Port = parsedPort
-		} else {
-			gc.JSON(http.StatusBadRequest, gin.H{"error": "over range port"})
-		}
-
 	}
-	process, err := getServiceByPort(s.Port)
-	if err != nil {
+
+	if port == defaultPort {
+		gc.JSON(http.StatusBadRequest, gin.H{"error": "Service is already running on port 3456"})
 		return
 	}
-	fmt.Println("process:", process)
-	//s.Start()
+
+	err = Restart(port)
+	if err != nil {
+		gc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	gc.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Server restarted on port %d", port)})
+}
+
+// InitServer 初始化服务器
+func InitServer(ip string, port int) *ServerObj {
+	server = &ServerObj{IP: ip, Port: port}
+	server.Start()
+
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		server.Stop()
+	}()
+	return server
 }
